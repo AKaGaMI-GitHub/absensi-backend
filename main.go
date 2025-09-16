@@ -11,5 +11,5 @@ func main() {
 	config.ConnectDB()
 	router := gin.Default()
 	routes.MainRoutes(router)
-	router.Run("localhost:8000")
+	router.Run("localhost:8080")
 }
