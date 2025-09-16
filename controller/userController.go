@@ -105,6 +105,12 @@ func StoreUser(c *gin.Context) {
 		return
 	}
 
+	role, err := GetRoleByKey(ctx, input.Role)
+	if err != nil {
+		utils.ResponseJSON(c, http.StatusBadRequest, false, "Role tidak valid!", start, err.Error())
+		return
+	}
+
 	newUser := model.User{
 		ID:           uuid.NewString(),
 		NamaDepan:    input.NamaDepan,
@@ -112,6 +118,7 @@ func StoreUser(c *gin.Context) {
 		Email:        input.Email,
 		Password:     hashedPassword,
 		Avatar:       avatarPath,
+		Role:         *role,
 		Slug:         utils.GenerateSlug(input.NamaDepan, input.NamaBelakang),
 		CreatedAt:    time.Now().UTC(),
 		UpdatedAt:    time.Now().UTC(),

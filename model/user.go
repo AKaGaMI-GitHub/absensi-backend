@@ -24,6 +24,7 @@ type CreateUserInput struct {
 	NamaBelakang string `json:"namaBelakang" form:"namaBelakang" validate:"max=60"`
 	Email        string `json:"email" form:"email" validate:"required,email"`
 	Password     string `json:"password" form:"password" validate:"required,min=6"`
+	Role 		 string `json:"role" form:"role" validate:"required"`
 }
 
 type UpdateUserInput struct {

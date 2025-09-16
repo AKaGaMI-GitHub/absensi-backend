@@ -60,6 +60,24 @@ func GetRoleUser(c *gin.Context) {
 	utils.ResponseJSON(c, http.StatusOK, true, "Berhasil memanggil data roles!", start, roleList)
 }
 
+func GetRoleByKey(ctx context.Context, key string) (*model.RoleUser, error) {
+	if key == "" {
+		return nil, fmt.Errorf("role key kosong")
+	}
+
+	var role model.RoleUser
+	filter := bson.M{"roleKey": key}
+	err := getRoleCollection().FindOne(ctx, filter).Decode(&role)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, fmt.Errorf("role dengan key %s tidak ditemukan", key)
+		}
+		return nil, err
+	}
+
+	return &role, nil
+}
+
 //public
 func StoreRole(c *gin.Context) {
 	start := time.Now()
