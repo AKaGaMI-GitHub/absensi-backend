@@ -4,13 +4,6 @@ import (
 	"time"
 )
 
-const (
-	RoleKeyAdmin     = "admin"
-	RoleKeyDosen     = "dosen"
-	RoleKeyMahasiswa = "mahasiswa"
-	RoleKeyPegawai   = "pegawai"
-)
-
 type UserRole string
 
 type User struct {
@@ -24,11 +17,6 @@ type User struct {
 	Slug         string    `json:"slug" bson:"slug"`
 	CreatedAt    time.Time `json:"createdAt" bson:"created_at"`
 	UpdatedAt    time.Time `json:"updatedAt" bson:"updated_at"`
-}
-
-type RoleUser struct {
-	RoleKey  string `bson:"roleKey" json:"roleKey"`
-	RoleName string `bson:"roleName" json:"roleName"`
 }
 
 type CreateUserInput struct {

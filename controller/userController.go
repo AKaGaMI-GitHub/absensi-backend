@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -19,8 +18,6 @@ import (
 func getUserCollection() *mongo.Collection {
 	return config.DB.Collection("users")
 }
-
-var validate = validator.New()
 
 func GetUsers(c *gin.Context) {
 	start := time.Now()

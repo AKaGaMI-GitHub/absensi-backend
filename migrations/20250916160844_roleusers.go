@@ -31,7 +31,7 @@ func Roleusers(db *mongo.Database) error {
 
 	// Tambahkan index unik
 	indexModel := mongo.IndexModel{
-		Keys:    bson.D{{Key: "RoleKey", Value: 1}}, // ascending
+		Keys:    bson.D{{Key: "roleKey", Value: 1}}, // ascending
 		Options: options.Index().SetUnique(true).SetName("unique_role"),
 	}
 
