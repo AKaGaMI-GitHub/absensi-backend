@@ -1,4 +1,4 @@
 /public/uploads/*
 /tmp
 .env
-.vscode
+.vscode.env
