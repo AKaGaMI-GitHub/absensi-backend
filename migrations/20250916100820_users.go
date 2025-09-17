@@ -31,13 +31,18 @@ func Users(db *mongo.Database) error {
 		}
 	}
 
-	// Tambahkan index unik untuk email
-	indexModel := mongo.IndexModel{
-		Keys:    bson.D{{Key: "email", Value: 1}}, // ascending
-		Options: options.Index().SetUnique(true).SetName("unique_email"),
+	indexList := []mongo.IndexModel{
+		{
+			Keys:    bson.D{{Key: "email", Value: 1}}, // ascending
+			Options: options.Index().SetUnique(true).SetName("unique_email"),
+		},
+		{
+			Keys:    bson.D{{Key: "username", Value: 1}}, // ascending
+			Options: options.Index().SetUnique(true).SetName("unique_username"),
+		},
 	}
 
-	_, err = db.Collection(collectionName).Indexes().CreateOne(ctx, indexModel)
+	_, err = db.Collection(collectionName).Indexes().CreateMany(ctx, indexList)
 	if err != nil {
 		return fmt.Errorf("failed to create index: %w", err)
 	}

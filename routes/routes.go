@@ -14,7 +14,10 @@ func MainRoutes(router *gin.Engine) {
 	{
 		//user
 		api.GET("/users", controller.GetUsers)
+		api.GET("/users/:username", controller.GetUserByID)
 		api.POST("/users/create", controller.StoreUser)
+		api.PATCH("/users/:uuid", controller.UpdateUser)
+		api.DELETE("/users/:uuid", controller.DeleteUser)
 
 		//role
 		api.GET("/roles", controller.GetRoleUser)
