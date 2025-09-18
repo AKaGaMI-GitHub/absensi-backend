@@ -12,7 +12,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -47,39 +46,45 @@ func GetUsers(c *gin.Context) {
 		return
 	}
 
-	var userslist []model.User = []model.User{} //membuat agar default menjadi []
+	userList := []model.User{}
+
 	for _, u := range users {
-		userslist = append(userslist, model.User{
+		role, _ := GetRoleByKey(ctx, u.Role)
+		userList = append(userList, model.User{
 			ID:           u.ID,
 			NamaDepan:    u.NamaDepan,
 			NamaBelakang: u.NamaBelakang,
+			Username:     u.Username,
+			Avatar:       u.Avatar,
+			RoleUser:     role,
 			Email:        u.Email,
 		})
 	}
 
-	utils.ResponseJSON(c, http.StatusOK, true, "Berhasil memanggil data users!", start, userslist)
+	utils.ResponseJSON(c, http.StatusOK, true, "Berhasil memanggil data users!", start, userList)
 
 }
 
-func GetUserByID(c *gin.Context) {
+func GetUserByUsername(c *gin.Context) {
+	start := time.Now()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	idParam := c.Param("id")
-	objectId, err := primitive.ObjectIDFromHex(idParam)
-
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID Format"})
-		return
-	}
+	usernameParams := c.Param("username")
 
 	var user model.User
-	err = getUserCollection().FindOne(ctx, bson.M{"_id": objectId}).Decode(&user)
+	err := getUserCollection().FindOne(ctx, bson.M{"username": usernameParams}).Decode(&user)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+		utils.ResponseJSON(c, http.StatusNotFound, false, "User tidak ditemukan!", start, nil)
 		return
 	}
-	c.JSON(http.StatusOK, user)
+
+	if user.Role != "" {
+		role, _ := GetRoleByKey(ctx, user.Role)
+		user.RoleUser = role
+	}
+
+	utils.ResponseJSON(c, http.StatusOK, true, "Berhasil mengambil data user!", start, user)
 }
 
 func StoreUser(c *gin.Context) {
@@ -115,11 +120,12 @@ func StoreUser(c *gin.Context) {
 		return
 	}
 
-	role, err := GetRoleByKey(ctx, input.Role)
-	if err != nil {
-		utils.ResponseJSON(c, http.StatusBadRequest, false, "Role tidak valid!", start, err.Error())
-		return
-	}
+	//check role
+	// role, err := GetRoleByKey(ctx, input.Role)
+	// if err != nil {
+	// 	utils.ResponseJSON(c, http.StatusBadRequest, false, "Role tidak valid!", start, err.Error())
+	// 	return
+	// }
 
 	newUser := model.User{
 		ID:           uuid.NewString(),
@@ -129,7 +135,7 @@ func StoreUser(c *gin.Context) {
 		Email:        input.Email,
 		Password:     hashedPassword,
 		Avatar:       avatarPath,
-		Role:         *role,
+		Role:         input.Role,
 		CreatedAt:    time.Now().UTC(),
 		UpdatedAt:    time.Now().UTC(),
 	}
@@ -140,7 +146,7 @@ func StoreUser(c *gin.Context) {
 		return
 	}
 
-	utils.ResponseJSON(c, http.StatusCreated, true, "Berhasil membuat user baru!", start, newUser)
+	utils.ResponseJSON(c, http.StatusOK, true, "Berhasil membuat user baru!", start, newUser)
 
 }
 
@@ -166,28 +172,33 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
-	roleKey := utils.GenerateSlug(input.Role)
-	if roleKey == "" {
-		utils.ResponseJSON(c, http.StatusBadRequest, false, "RoleKey tidak boleh kosong!", start, nil)
-		return
-	}
+	// role, err := GetRoleByKey(ctx, input.Role)
+	// if err != nil {
+	// 	utils.ResponseJSON(c, http.StatusBadRequest, false, "RoleKey tidak boleh kosong!", start, nil)
+	// 	return
+	// }
 
 	updateData := bson.M{
 		"$set": bson.M{
 			"namaDepan":    input.NamaDepan,
 			"namaBelakang": input.NamaBelakang,
-			"role":         roleKey,
-			"slug":         utils.GenerateSlug(input.NamaDepan, input.NamaBelakang),
+			"role":         input.Role,
 		},
 	}
 
-	avatarPath, err := utils.UploadFile(c, "avatar", "image", "avatar")
-	//check upload file
-	if err == nil && avatarPath != "" {
-		updateData["$set"].(bson.M)["avatar"] = avatarPath
-	} else {
+	file, _, err := c.Request.FormFile("avatar")
+	if err == http.ErrMissingFile {
+		fmt.Println("File Kosong ", file)
+	} else if err != nil && err != http.ErrMissingFile {
 		utils.ResponseJSON(c, http.StatusUnprocessableEntity, false, "Upload avatar gagal!", start, err.Error())
 		return
+	} else {
+		avatarPath, err := utils.UploadFile(c, "avatar", "image", "avatar")
+		if err != nil {
+			utils.ResponseJSON(c, http.StatusUnprocessableEntity, false, "Upload avatar gagal!", start, err.Error())
+			return
+		}
+		updateData["$set"].(bson.M)["avatar"] = avatarPath
 	}
 
 	if input.Password != "" {
@@ -213,10 +224,10 @@ func UpdateUser(c *gin.Context) {
 	err = getUserCollection().FindOneAndUpdate(ctx, id, updateData, options).Decode(&updateUser)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
-			utils.ResponseJSON(c, http.StatusNotFound, false, "Role tidak ditemukan!", start, nil)
+			utils.ResponseJSON(c, http.StatusNotFound, false, "User tidak ditemukan!", start, nil)
 			return
 		}
-		utils.ResponseJSON(c, http.StatusInternalServerError, false, "Gagal update role!", start, err.Error())
+		utils.ResponseJSON(c, http.StatusInternalServerError, false, "Gagal update user!", start, err.Error())
 		return
 	}
 
@@ -245,5 +256,4 @@ func DeleteUser(c *gin.Context) {
 	}
 
 	utils.ResponseJSON(c, http.StatusOK, true, "Berhasil menghapus user!", start, nil)
-
 }

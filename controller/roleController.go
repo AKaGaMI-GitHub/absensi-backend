@@ -16,12 +16,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-//private
+// private
 func getRoleCollection() *mongo.Collection {
 	return config.DB.Collection("roleusers")
 }
 
-//private
+// private
 func getRoleUUID(c *gin.Context) (bson.M, string, error) {
 	uuid := c.Param("uuid")
 	if uuid == "" {
@@ -30,7 +30,7 @@ func getRoleUUID(c *gin.Context) (bson.M, string, error) {
 	return bson.M{"_id": uuid}, uuid, nil
 }
 
-//public
+// public
 func GetRoleUser(c *gin.Context) {
 	start := time.Now()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -52,7 +52,7 @@ func GetRoleUser(c *gin.Context) {
 	var roleList []model.Roles = []model.Roles{} //membuat agar default menjadi []
 	for _, u := range roles {
 		roleList = append(roleList, model.Roles{
-			RoleKey:    u.RoleKey,
+			RoleKey:  u.RoleKey,
 			RoleName: u.RoleName,
 		})
 	}
@@ -66,8 +66,7 @@ func GetRoleByKey(ctx context.Context, key string) (*model.RoleUser, error) {
 	}
 
 	var role model.RoleUser
-	filter := bson.M{"roleKey": key}
-	err := getRoleCollection().FindOne(ctx, filter).Decode(&role)
+	err := getRoleCollection().FindOne(ctx, bson.M{"roleKey": key}).Decode(&role)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			return nil, fmt.Errorf("role dengan key %s tidak ditemukan", key)
@@ -78,7 +77,7 @@ func GetRoleByKey(ctx context.Context, key string) (*model.RoleUser, error) {
 	return &role, nil
 }
 
-//public
+// public
 func StoreRole(c *gin.Context) {
 	start := time.Now()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -103,11 +102,11 @@ func StoreRole(c *gin.Context) {
 		return
 	}
 	newRoles := model.Roles{
-		ID:           uuid.NewString(),
-		RoleKey:   roleKey,
+		ID:       uuid.NewString(),
+		RoleKey:  roleKey,
 		RoleName: input.RoleName,
 	}
-	
+
 	_, err := getRoleCollection().InsertOne(ctx, newRoles)
 	if err != nil {
 		utils.ResponseJSON(c, http.StatusInternalServerError, false, "Gagal membuat role baru!", start, err.Error())
@@ -117,7 +116,7 @@ func StoreRole(c *gin.Context) {
 	utils.ResponseJSON(c, http.StatusCreated, true, "Berhasil membuat role baru!", start, newRoles)
 }
 
-//public
+// public
 func UpdateRole(c *gin.Context) {
 	start := time.Now()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -151,16 +150,16 @@ func UpdateRole(c *gin.Context) {
 	//Update data!!
 	updateData := bson.M{
 		"$set": bson.M{
-			"roleKey":   roleKey,
-			"roleName":  input.RoleName,
+			"roleKey":  roleKey,
+			"roleName": input.RoleName,
 		},
 	}
 
 	options := options.FindOneAndUpdate().SetReturnDocument(options.After)
 	var updatedRole model.Roles
 
-    // Find and update the document, and decode the result into updatedRole
-    err = getRoleCollection().FindOneAndUpdate(ctx, filterRoles, updateData, options).Decode(&updatedRole)
+	// Find and update the document, and decode the result into updatedRole
+	err = getRoleCollection().FindOneAndUpdate(ctx, filterRoles, updateData, options).Decode(&updatedRole)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			utils.ResponseJSON(c, http.StatusNotFound, false, "Role tidak ditemukan!", start, nil)
@@ -173,7 +172,7 @@ func UpdateRole(c *gin.Context) {
 	utils.ResponseJSON(c, http.StatusOK, true, "Berhasil update role!", start, updatedRole)
 }
 
-//public
+// public
 func DeleteRole(c *gin.Context) {
 	start := time.Now()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -185,7 +184,7 @@ func DeleteRole(c *gin.Context) {
 		utils.ResponseJSON(c, http.StatusBadRequest, false, "UUID tidak ditemukan!", start, err.Error())
 		return
 	}
-	
+
 	result, err := getRoleCollection().DeleteOne(ctx, filterRoles)
 	if err != nil {
 		utils.ResponseJSON(c, http.StatusInternalServerError, false, "Gagal menghapus role!", start, err.Error())
